@@ -5,6 +5,9 @@
 //  Created by 王明森 on 11/22/22.
 //
 
+#ifndef BTree_cpp
+#define BTree_cpp
+
 #include "BTree.hpp"
 #include <cmath>
 #include <algorithm>
@@ -72,6 +75,56 @@ TreeResult BTree::EarlyExerciseOption(const std::function<double (double, double
     }
 }
 
+std::vector<double> BTree::GenerateSMeshPI(double S0, double u, double d, std::size_t steps) const {
+    std::vector<double> S({S0 * std::pow(u, static_cast<double>(steps))});
+    double d2 = d * d;
+    for (std::size_t i = 0; i < steps; i++) {
+        S.push_back(S.back() * d2);
+    }
+    return S;
+}
+
+std::array<std::deque<double>, 2> BTree::GenerateSMeshEE(double S0, double u, double d, std::size_t steps) const {
+    
+    std::array<std::deque<double>, 2> S;
+    std::deque<double> longer_mesh;
+    std::deque<double> shorter_mesh;
+    
+    longer_mesh.push_back(S0 * std::pow(u, static_cast<double>(steps)));
+    shorter_mesh.push_back(S0 * std::pow(u, static_cast<double>(steps) - 1.));
+    
+    double d2 = d * d;
+    for (std::size_t i = 0; i < steps - 1; i++) {
+        longer_mesh.push_back(longer_mesh.back() * d2);
+        shorter_mesh.push_back(shorter_mesh.back() * d2);
+    }
+    longer_mesh.push_back(longer_mesh.back() * d2);
+    // Now, longer_mesh has steps + 1 elements and shorter_mesh has steps elements
+    // The current S[i] always has (curr_step + 1) elements.
+
+    return std::array<std::deque<double>, 2>({std::move(longer_mesh), std::move(shorter_mesh)});
+}
+
+template <typename container>
+std::vector<double> BTree::GeneratePayoff(const container& S, const std::function<double (double, double)>& payoff, double t) const {
+    auto payoff_t = std::bind(payoff, std::placeholders::_1, t);
+    
+    std::vector<double> V(S.size());
+    std::transform(S.cbegin(), S.cend(), V.begin(), payoff_t);
+    
+    return V;
+}
+
+void BTree::EarlyExUpdate(std::vector<double>& V, const std::vector<double>& earlyex_payoff) const {
+    assert(V.size() == earlyex_payoff.size());
+    
+    auto earlyex_it = earlyex_payoff.cbegin();
+    for (auto Vit = V.begin(); Vit != V.end(); Vit++) {
+        *Vit = std::max(*Vit, *earlyex_it);
+        earlyex_it++;
+    }
+}
+
 void BTree::BacktrackPI(std::vector<double>& V_mesh) const {
     for (auto Vit = V_mesh.begin(); Vit + 1 != V_mesh.end(); Vit++) {
         // Get value of the last node by taking the expectation and discounting
@@ -83,7 +136,7 @@ void BTree::BacktrackPI(std::vector<double>& V_mesh) const {
     V_mesh.pop_back();
 }
 
-void BTree::BacktrackEE(std::vector<double>& V_mesh, std::array<std::deque<double>, 2>& S_mesh, size_t curr_step, const std::function<double (double)>& payoff_T) const {
+void BTree::BacktrackEE(std::vector<double>& V_mesh, std::array<std::deque<double>, 2>& S_mesh, size_t curr_step, const std::function<double (double, double)>& payoff, double curr_time) const {
     // We maintain two vectors of S and we use them alternatingly.
     
     // The current S[i] always has (curr_step + 1) elements.
@@ -92,25 +145,20 @@ void BTree::BacktrackEE(std::vector<double>& V_mesh, std::array<std::deque<doubl
     size_t which_S = (S_mesh[1].size() == (curr_step + 1));
     
     // Find the payoff if we exercise the option at this step
-    std::vector<double> exercise_payoff(S_mesh[which_S].cbegin(), S_mesh[which_S].cend());
-    std::transform(exercise_payoff.cbegin(), exercise_payoff.cend(), exercise_payoff.begin(), payoff_T);
+    std::vector<double> earlyex_payoff(this->GeneratePayoff(S_mesh[which_S], payoff, curr_time));
     
-    auto payoff_it = exercise_payoff.cbegin();
+    auto payoff_it = earlyex_payoff.cbegin();
     for (auto Vit = V_mesh.begin(); Vit + 1 != V_mesh.end(); Vit++) {
         // Get value of the last node by taking the expectation and discounting
         // V = disc(p_u * V_u + p_d * V_d)
         *Vit = disc_p * (*Vit) + disc_1p * (*(Vit + 1));
-        
-        // If early exercise is more profitable, replace value with early exercise payoff.
-        if ((*payoff_it) > (*Vit)) {
-            *Vit = *payoff_it;
-        }
-        
-        payoff_it++;
     }
     
     // Shrink V since there are fewer nodes needed.
     V_mesh.pop_back();
+    
+    // If early exercise is more profitable, replace value with early exercise payoff.
+    this->EarlyExUpdate(V_mesh, earlyex_payoff);
     
     // Also shrink the current S since we will have less steps in the next two iterations.
     if (S_mesh[which_S].size() >= 2) {
@@ -119,20 +167,24 @@ void BTree::BacktrackEE(std::vector<double>& V_mesh, std::array<std::deque<doubl
     }
 }
 
+TreeResult BTree::GenTreeResult(double V00, double V10, double V11, double V20, double V21, double V22) const {
+    
+    double delta = (V10 - V11) / (S0_ * (u_ - d_));
+    double gamma = ((V20 - V21) / (S0_ * (u_ * u_ - 1.)) - ((V21 - V22) / (S0_ * (1. - d_ * d_)))) / (.5 * S0_ * (u_ * u_ - d_ * d_));
+    double theta = (V21 - V00)/ (2. * dt_);
+    
+    return TreeResult({V00, delta, gamma, theta});
+}
+
 TreeResult BTree::PIVanilla(const std::function<double (double, double)>& payoff) const {
     
     // Generate asset price at maturity
-    std::vector<double> S({S0_ * std::pow(u_, static_cast<double>(steps_))});
-    double d2 = d_ * d_;
-    for (std::size_t i = 0; i < steps_; i++) {
-        S.push_back(S.back() * d2);
-    }
+    std::vector<double> S(this->GenerateSMeshPI(S0_, u_, d_, steps_));
     
     auto payoff_T = std::bind(payoff, std::placeholders::_1, T_);
     
     // Generate derivative value at maturity
-    std::vector<double> V(S.size());
-    std::transform(S.cbegin(), S.cend(), V.begin(), payoff_T);
+    std::vector<double> V(this->GeneratePayoff(S, payoff, T_));
     
     // Backtrack until t = 2 * dt (the resulting sub-tree is used for Greek calculation)
     std::size_t curr_step = steps_;
@@ -157,44 +209,26 @@ TreeResult BTree::PIVanilla(const std::function<double (double, double)>& payoff
     this->BacktrackPI(V);
     double V00 = V[0];
     
-    double delta = (V10 - V11) / (S0_ * (u_ - d_));
-    double gamma = ((V20 - V21) / (S0_ * (u_ * u_ - 1.)) - ((V21 - V22) / (S0_ * (1. - d_ * d_)))) / (.5 * S0_ * (u_ * u_ - d_ * d_));
-    double theta = (V21 - V00)/ (2. * dt_);
-    
-    return TreeResult({V00, delta, gamma, theta});
+    return this->GenTreeResult(V00, V10, V11, V20, V21, V22);
 }
 
 TreeResult BTree::EEVanilla(const std::function<double (double, double)>& payoff) const {
     // Generate asset prices
     // S[0]: Asset price at maturity
     // S[1]: Asset price dt before maturity
-    std::array<std::deque<double>, 2> S;
-    S[0].push_back(S0_ * std::pow(u_, static_cast<double>(steps_)));
-    S[1].push_back(S0_ * std::pow(u_, static_cast<double>(steps_) - 1.));
-    
-    double d2 = d_ * d_;
-    for (std::size_t i = 0; i < steps_ - 1; i++) {
-        S[0].push_back(S[0].back() * d2);
-        S[1].push_back(S[1].back() * d2);
-    }
-    S[0].push_back(S[0].back() * d2);
-    // Now, S[0] has steps_ + 1 elements and S[1] has steps_ elements
-    // The current S[i] always has (curr_step + 1) elements.
+    std::array<std::deque<double>, 2> S(this->GenerateSMeshEE(S0_, u_, d_, steps_));
     
     std::size_t curr_time = T_;
     std::size_t curr_step = steps_;
-    std::vector<double> V(S[0].size());
-    auto payoff_T = std::bind(payoff, std::placeholders::_1, curr_time);
-    std::transform(S[0].cbegin(), S[0].cend(), V.begin(), payoff_T);
+    std::vector<double> V(this->GeneratePayoff(S[0], payoff, curr_time));
     S[0].pop_back();
     S[0].pop_front();
     curr_step--;
     curr_time -= dt_;
     
     while (curr_step >= 2) {
-        payoff_T = std::bind(payoff, std::placeholders::_1, curr_time);
         // During backtracking, curr_step and curr_time are exactly the current step (0-indexed) and the current time
-        this->BacktrackEE(V, S, curr_step, payoff_T);
+        this->BacktrackEE(V, S, curr_step, payoff, curr_time);
         curr_step--;
         curr_time -= dt_;
     }
@@ -205,8 +239,7 @@ TreeResult BTree::EEVanilla(const std::function<double (double, double)>& payoff
     double V22 = V[2];
     
     // Backtrack
-    payoff_T = std::bind(payoff, std::placeholders::_1, curr_time);
-    this->BacktrackEE(V, S, curr_step, payoff_T);
+    this->BacktrackEE(V, S, curr_step, payoff, curr_time);
     curr_step--;
     curr_time -= dt_;
     
@@ -215,19 +248,170 @@ TreeResult BTree::EEVanilla(const std::function<double (double, double)>& payoff
     double V11 = V[1];
     
     // Backtrack
-    payoff_T = std::bind(payoff, std::placeholders::_1, curr_time);
-    this->BacktrackEE(V, S, curr_step, payoff_T);
+    this->BacktrackEE(V, S, curr_step, payoff, curr_time);
     curr_step--;
     curr_time -= dt_;
-
     double V00 = V[0];
-    double delta = (V10 - V11) / (S0_ * (u_ - d_));
-    double gamma = ((V20 - V21) / (S0_ * (u_ * u_ - 1.)) - ((V21 - V22) / (S0_ * (1. - d_ * d_)))) / (.5 * S0_ * (u_ * u_ - d_ * d_));
-    double theta = (V21 - V00)/ (2. * dt_);
     
-    return TreeResult({V00, delta, gamma, theta});
+    return this->GenTreeResult(V00, V10, V11, V20, V21, V22);
 }
 
+TreeResult BTree::PIAvg(const std::function<double (double, double)>& payoff) const {
+    TreeResult res1 = this->PIVanilla(payoff);
+    
+    BTree longer_tree(S0_, sigma_, T_, steps_ + 1, r_, q_);
+    
+    TreeResult res2 = this->PIVanilla(payoff);
+    
+    return TreeResult({(res1.value + res2.value) / 2., (res1.delta + res2.delta) / 2., (res1.gamma + res2.gamma) / 2., (res1.theta + res2.theta) / 2.});
+}
 
+TreeResult BTree::EEAvg(const std::function<double (double, double)>& payoff) const {
+    TreeResult res1 = this->EEVanilla(payoff);
+    
+    BTree longer_tree(S0_, sigma_, T_, steps_ + 1, r_, q_);
+    
+    TreeResult res2 = this->EEVanilla(payoff);
+    
+    return TreeResult({(res1.value + res2.value) / 2., (res1.delta + res2.delta) / 2., (res1.gamma + res2.gamma) / 2., (res1.theta + res2.theta) / 2.});
+}
 
+TreeResult BTree::PIBS(const std::function<double (double, double)>& payoff) const {
+    std::size_t curr_step = steps_;
+    curr_step--;    // We do not need the last step here
+    
+    // Generate asset price one step before maturity
+    std::vector<double> S(this->GenerateSMeshPI(S0_, u_, d_, curr_step));
+    
+    // Generate the BS pricer
+    auto last_step = [&](double S_T, double t)->double {
+        // PUT!!
+        double K = payoff(0, 0);
+        EuropeanOption option(T_ - dt_, S_T, K, T_, sigma_, r_, q_);
+        
+        return option.Put();
+    };
+    
+    
+    // Generate derivative value at the step just before maturity
+    std::vector<double> V(this->GeneratePayoff(S, last_step, 0.));  // The last param is a dummy
+    
+    // Backtrack until t = 2 * dt (the resulting sub-tree is used for Greek calculation)
+    while (curr_step > 2) {
+        this->BacktrackPI(V);
+        curr_step--;
+    }
+    
+    // Store nodes of Step 2
+    double V20 = V[0];
+    double V21 = V[1];
+    double V22 = V[2];
+    
+    // Backtrack
+    this->BacktrackPI(V);
+    
+    // Store nodes of Step 2
+    double V10 = V[0];
+    double V11 = V[1];
+    
+    // Backtrack
+    this->BacktrackPI(V);
+    double V00 = V[0];
+    
+    return this->GenTreeResult(V00, V10, V11, V20, V21, V22);
+}
 
+TreeResult BTree::EEBS(const std::function<double (double, double)>& payoff) const {
+    std::size_t curr_step = steps_;
+    std::size_t curr_time = T_;
+    curr_step--;    // We do not need the last step here
+    curr_time -= dt_;
+    
+    // Generate asset prices
+    // S[0]: Asset price at maturity
+    // S[1]: Asset price dt before maturity
+    std::array<std::deque<double>, 2> S(this->GenerateSMeshEE(S0_, u_, d_, curr_step));
+    
+    // The BS pricer
+    auto last_step = [&](double S_T, double t)->double {
+        // PUT!!
+        double K = payoff(0, 0);
+        EuropeanOption option(T_ - dt_, S_T, K, T_, sigma_, r_, q_);
+        
+        return option.Put();
+    };
+    
+    // Get BS prices
+    std::vector<double> V(this->GeneratePayoff(S[0], last_step, 0.));   // Again, the last param is a dummy.
+    
+    // Get early exercise payoffs
+    std::vector<double> exercise_payoff(this->GeneratePayoff(S[0], payoff, curr_time));
+
+    // Compare
+    this->EarlyExUpdate(V, exercise_payoff);
+    
+    S[0].pop_back();
+    S[0].pop_front();
+    curr_step--;
+    curr_time -= dt_;
+    
+    while (curr_step >= 2) {
+        this->BacktrackEE(V, S, curr_step, payoff, curr_time);
+        curr_step--;
+        curr_time -= dt_;
+    }
+    
+    // Store nodes of Step 2
+    double V20 = V[0];
+    double V21 = V[1];
+    double V22 = V[2];
+    
+    // Backtrack
+    this->BacktrackEE(V, S, curr_step, payoff, curr_time);
+    curr_step--;
+    curr_time -= dt_;
+    
+    // Store nodes of Step 1
+    double V10 = V[0];
+    double V11 = V[1];
+    
+    // Backtrack
+    this->BacktrackEE(V, S, curr_step, payoff, curr_time);
+    curr_step--;
+    curr_time -= dt_;
+    double V00 = V[0];
+    
+    return this->GenTreeResult(V00, V10, V11, V20, V21, V22);
+}
+
+TreeResult BTree::PIBSR(const std::function<double (double, double)>& payoff) const {
+    TreeResult res1 = this->PIBS(payoff);
+    
+    BTree shorter_tree(S0_, sigma_, T_, steps_ / 2, r_, q_);
+    
+    TreeResult res2 = shorter_tree.PIBS(payoff);
+    
+    double value = res1.value * 2 - res2.value;
+    double delta = res1.delta * 2 - res2.delta;
+    double gamma = res1.gamma * 2 - res2.gamma;
+    double theta = res1.theta * 2 - res2.theta;
+    
+    return TreeResult({value, delta, gamma, theta});
+}
+
+TreeResult BTree::EEBSR(const std::function<double (double, double)>& payoff) const {
+    TreeResult res1 = this->EEBS(payoff);
+    
+    BTree shorter_tree(S0_, sigma_, T_, steps_ / 2, r_, q_);
+    
+    TreeResult res2 = shorter_tree.EEBS(payoff);
+    
+    double value = res1.value * 2 - res2.value;
+    double delta = res1.delta * 2 - res2.delta;
+    double gamma = res1.gamma * 2 - res2.gamma;
+    double theta = res1.theta * 2 - res2.theta;
+    
+    return TreeResult({value, delta, gamma, theta});
+}
+
+#endif /* BTree_cpp */

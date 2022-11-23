@@ -8,11 +8,17 @@
 #ifndef TreePricer_hpp
 #define TreePricer_hpp
 
+#include <iostream>
+
 struct TreeResult {
     double value;
     double delta;
     double gamma;
     double theta;
+    
+    void Print() const {
+        std::cout << value << '\t' << delta << '\t' << gamma << '\t' << theta << std::endl;
+    }
 };
 
 enum TreeModifier {

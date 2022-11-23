@@ -10,6 +10,7 @@
 		CA44EE81292D5DEB00597BFF /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CA44EE80292D5DEB00597BFF /* main.cpp */; };
 		CA44EE89292D5E7100597BFF /* BTree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CA44EE87292D5E7100597BFF /* BTree.cpp */; };
 		CA44EE8C292D5EB800597BFF /* EuropeanOption.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CA44EE8B292D5EB800597BFF /* EuropeanOption.cpp */; };
+		CA44EEA8292DA42300597BFF /* AmericanPut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CA44EEA6292DA42300597BFF /* AmericanPut.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -32,6 +33,8 @@
 		CA44EE8A292D5EB800597BFF /* EuropeanOption.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = EuropeanOption.hpp; sourceTree = "<group>"; };
 		CA44EE8B292D5EB800597BFF /* EuropeanOption.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = EuropeanOption.cpp; sourceTree = "<group>"; };
 		CA44EE91292D627900597BFF /* TreePricer.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TreePricer.hpp; sourceTree = "<group>"; };
+		CA44EEA6292DA42300597BFF /* AmericanPut.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AmericanPut.cpp; sourceTree = "<group>"; };
+		CA44EEA7292DA42300597BFF /* AmericanPut.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AmericanPut.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,6 +70,8 @@
 				CA44EE80292D5DEB00597BFF /* main.cpp */,
 				CA44EE87292D5E7100597BFF /* BTree.cpp */,
 				CA44EE88292D5E7100597BFF /* BTree.hpp */,
+				CA44EEA6292DA42300597BFF /* AmericanPut.cpp */,
+				CA44EEA7292DA42300597BFF /* AmericanPut.hpp */,
 				CA44EE8B292D5EB800597BFF /* EuropeanOption.cpp */,
 				CA44EE8A292D5EB800597BFF /* EuropeanOption.hpp */,
 				CA44EE91292D627900597BFF /* TreePricer.hpp */,
@@ -132,6 +137,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CA44EE89292D5E7100597BFF /* BTree.cpp in Sources */,
+				CA44EEA8292DA42300597BFF /* AmericanPut.cpp in Sources */,
 				CA44EE8C292D5EB800597BFF /* EuropeanOption.cpp in Sources */,
 				CA44EE81292D5DEB00597BFF /* main.cpp in Sources */,
 			);

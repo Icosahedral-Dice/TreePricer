@@ -49,8 +49,18 @@ public:
     TreeResult EarlyExerciseOption(const std::function<double (double, double)>& payoff, const TreeModifier& modifier) const;
     
 protected:
+    std::vector<double> GenerateSMeshPI(double S0, double u, double d, std::size_t steps) const;
+    std::array<std::deque<double>, 2> GenerateSMeshEE(double S0, double u, double d, std::size_t steps) const;
+    
+    template <typename container>
+    std::vector<double> GeneratePayoff(const container& S, const std::function<double (double, double)>& payoff, double t) const;
+    
+    void EarlyExUpdate(std::vector<double>& V, const std::vector<double>& earlyex_payoff) const;
+    
     void BacktrackPI(std::vector<double>& V_mesh) const;
-    void BacktrackEE(std::vector<double>& V_mesh, std::array<std::deque<double>, 2>& S_mesh, size_t curr_step, const std::function<double (double)>& payoff_T) const;
+    void BacktrackEE(std::vector<double>& V_mesh, std::array<std::deque<double>, 2>& S_mesh, size_t curr_step, const std::function<double (double, double)>& payoff, double curr_time) const;
+    
+    TreeResult GenTreeResult(double V00, double V10, double V11, double V20, double V21, double V22) const;
     
     TreeResult PIVanilla(const std::function<double (double, double)>& payoff) const;
     TreeResult PIAvg(const std::function<double (double, double)>& payoff) const;
@@ -67,5 +77,9 @@ protected:
 //    TreeResult EEBS_VarRed(const std::function<double (double, double)>& payoff) const;
 //    TreeResult EEBSR_VarRed(const std::function<double (double, double)>& payoff) const;
 };
+
+//#ifndef BTree_cpp
+//#include "BTree.cpp"
+//#endif /* BTree_cpp */
 
 #endif /* BTree_hpp */
