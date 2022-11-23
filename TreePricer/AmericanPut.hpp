@@ -16,9 +16,11 @@ private:
     EuropeanOption option_;
     
 public:
+    AmericanPut(double S, double K, double T, double sigma, double r, double q);
     AmericanPut(const EuropeanOption& option);
     
     TreeResult BinomialTree(std::size_t steps, const TreeModifier& modifier, bool variance_reduction = false) const;
+    TreeResult TrinomialTree(std::size_t steps, const TreeModifier& modifier, bool variance_reduction = false) const;
 };
 
 #endif /* AmericanPut_hpp */

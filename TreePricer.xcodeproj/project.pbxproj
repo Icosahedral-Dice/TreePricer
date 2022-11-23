@@ -11,6 +11,9 @@
 		CA44EE89292D5E7100597BFF /* BTree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CA44EE87292D5E7100597BFF /* BTree.cpp */; };
 		CA44EE8C292D5EB800597BFF /* EuropeanOption.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CA44EE8B292D5EB800597BFF /* EuropeanOption.cpp */; };
 		CA44EEA8292DA42300597BFF /* AmericanPut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CA44EEA6292DA42300597BFF /* AmericanPut.cpp */; };
+		CA44EEAE292DB2A700597BFF /* TTree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CA44EEAC292DB2A700597BFF /* TTree.cpp */; };
+		CA44EEB1292DD8CA00597BFF /* TreeIV.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CA44EEAF292DD8CA00597BFF /* TreeIV.cpp */; };
+		CA44EEB4292DDC7700597BFF /* EuropeanPut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CA44EEB2292DDC7700597BFF /* EuropeanPut.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -35,6 +38,12 @@
 		CA44EE91292D627900597BFF /* TreePricer.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TreePricer.hpp; sourceTree = "<group>"; };
 		CA44EEA6292DA42300597BFF /* AmericanPut.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AmericanPut.cpp; sourceTree = "<group>"; };
 		CA44EEA7292DA42300597BFF /* AmericanPut.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AmericanPut.hpp; sourceTree = "<group>"; };
+		CA44EEAC292DB2A700597BFF /* TTree.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TTree.cpp; sourceTree = "<group>"; };
+		CA44EEAD292DB2A700597BFF /* TTree.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TTree.hpp; sourceTree = "<group>"; };
+		CA44EEAF292DD8CA00597BFF /* TreeIV.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TreeIV.cpp; sourceTree = "<group>"; };
+		CA44EEB0292DD8CA00597BFF /* TreeIV.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TreeIV.hpp; sourceTree = "<group>"; };
+		CA44EEB2292DDC7700597BFF /* EuropeanPut.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = EuropeanPut.cpp; sourceTree = "<group>"; };
+		CA44EEB3292DDC7700597BFF /* EuropeanPut.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = EuropeanPut.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,10 +77,16 @@
 			isa = PBXGroup;
 			children = (
 				CA44EE80292D5DEB00597BFF /* main.cpp */,
+				CA44EEAC292DB2A700597BFF /* TTree.cpp */,
+				CA44EEAD292DB2A700597BFF /* TTree.hpp */,
 				CA44EE87292D5E7100597BFF /* BTree.cpp */,
 				CA44EE88292D5E7100597BFF /* BTree.hpp */,
+				CA44EEAF292DD8CA00597BFF /* TreeIV.cpp */,
+				CA44EEB0292DD8CA00597BFF /* TreeIV.hpp */,
 				CA44EEA6292DA42300597BFF /* AmericanPut.cpp */,
 				CA44EEA7292DA42300597BFF /* AmericanPut.hpp */,
+				CA44EEB2292DDC7700597BFF /* EuropeanPut.cpp */,
+				CA44EEB3292DDC7700597BFF /* EuropeanPut.hpp */,
 				CA44EE8B292D5EB800597BFF /* EuropeanOption.cpp */,
 				CA44EE8A292D5EB800597BFF /* EuropeanOption.hpp */,
 				CA44EE91292D627900597BFF /* TreePricer.hpp */,
@@ -136,10 +151,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CA44EEB1292DD8CA00597BFF /* TreeIV.cpp in Sources */,
+				CA44EEAE292DB2A700597BFF /* TTree.cpp in Sources */,
 				CA44EE89292D5E7100597BFF /* BTree.cpp in Sources */,
 				CA44EEA8292DA42300597BFF /* AmericanPut.cpp in Sources */,
 				CA44EE8C292D5EB800597BFF /* EuropeanOption.cpp in Sources */,
 				CA44EE81292D5DEB00597BFF /* main.cpp in Sources */,
+				CA44EEB4292DDC7700597BFF /* EuropeanPut.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

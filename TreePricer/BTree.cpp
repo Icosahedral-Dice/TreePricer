@@ -137,25 +137,17 @@ void BTree::BacktrackPI(std::vector<double>& V_mesh) const {
 }
 
 void BTree::BacktrackEE(std::vector<double>& V_mesh, std::array<std::deque<double>, 2>& S_mesh, size_t curr_step, const std::function<double (double, double)>& payoff, double curr_time) const {
-    // We maintain two vectors of S and we use them alternatingly.
     
+    // Backtrack as if path independent
+    this->BacktrackPI(V_mesh);
+    
+    // We maintain two vectors of S and we use them alternatingly.
     // The current S[i] always has (curr_step + 1) elements.
     // The other has (curr_step) elements.
-    
     size_t which_S = (S_mesh[1].size() == (curr_step + 1));
     
     // Find the payoff if we exercise the option at this step
     std::vector<double> earlyex_payoff(this->GeneratePayoff(S_mesh[which_S], payoff, curr_time));
-    
-    auto payoff_it = earlyex_payoff.cbegin();
-    for (auto Vit = V_mesh.begin(); Vit + 1 != V_mesh.end(); Vit++) {
-        // Get value of the last node by taking the expectation and discounting
-        // V = disc(p_u * V_u + p_d * V_d)
-        *Vit = disc_p * (*Vit) + disc_1p * (*(Vit + 1));
-    }
-    
-    // Shrink V since there are fewer nodes needed.
-    V_mesh.pop_back();
     
     // If early exercise is more profitable, replace value with early exercise payoff.
     this->EarlyExUpdate(V_mesh, earlyex_payoff);
@@ -188,7 +180,7 @@ TreeResult BTree::PIVanilla(const std::function<double (double, double)>& payoff
     
     // Backtrack until t = 2 * dt (the resulting sub-tree is used for Greek calculation)
     std::size_t curr_step = steps_;
-    while (curr_step > 2) {
+    while (curr_step >= 2) {
         this->BacktrackPI(V);
         curr_step--;
     }
@@ -218,7 +210,7 @@ TreeResult BTree::EEVanilla(const std::function<double (double, double)>& payoff
     // S[1]: Asset price dt before maturity
     std::array<std::deque<double>, 2> S(this->GenerateSMeshEE(S0_, u_, d_, steps_));
     
-    std::size_t curr_time = T_;
+    double curr_time = T_;
     std::size_t curr_step = steps_;
     std::vector<double> V(this->GeneratePayoff(S[0], payoff, curr_time));
     S[0].pop_back();
@@ -261,7 +253,7 @@ TreeResult BTree::PIAvg(const std::function<double (double, double)>& payoff) co
     
     BTree longer_tree(S0_, sigma_, T_, steps_ + 1, r_, q_);
     
-    TreeResult res2 = this->PIVanilla(payoff);
+    TreeResult res2 = longer_tree.PIVanilla(payoff);
     
     return TreeResult({(res1.value + res2.value) / 2., (res1.delta + res2.delta) / 2., (res1.gamma + res2.gamma) / 2., (res1.theta + res2.theta) / 2.});
 }
@@ -271,7 +263,7 @@ TreeResult BTree::EEAvg(const std::function<double (double, double)>& payoff) co
     
     BTree longer_tree(S0_, sigma_, T_, steps_ + 1, r_, q_);
     
-    TreeResult res2 = this->EEVanilla(payoff);
+    TreeResult res2 = longer_tree.EEVanilla(payoff);
     
     return TreeResult({(res1.value + res2.value) / 2., (res1.delta + res2.delta) / 2., (res1.gamma + res2.gamma) / 2., (res1.theta + res2.theta) / 2.});
 }
@@ -297,7 +289,7 @@ TreeResult BTree::PIBS(const std::function<double (double, double)>& payoff) con
     std::vector<double> V(this->GeneratePayoff(S, last_step, 0.));  // The last param is a dummy
     
     // Backtrack until t = 2 * dt (the resulting sub-tree is used for Greek calculation)
-    while (curr_step > 2) {
+    while (curr_step >= 2) {
         this->BacktrackPI(V);
         curr_step--;
     }
@@ -323,7 +315,7 @@ TreeResult BTree::PIBS(const std::function<double (double, double)>& payoff) con
 
 TreeResult BTree::EEBS(const std::function<double (double, double)>& payoff) const {
     std::size_t curr_step = steps_;
-    std::size_t curr_time = T_;
+    double curr_time = T_;
     curr_step--;    // We do not need the last step here
     curr_time -= dt_;
     

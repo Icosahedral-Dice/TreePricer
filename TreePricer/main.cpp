@@ -7,18 +7,32 @@
 
 #include <iostream>
 #include "AmericanPut.hpp"
+#include <iomanip>
 
 void TestBasicBTree() {
     EuropeanOption option(0., 54., 50., 1., .29, .0375, .01);
     AmericanPut ameriput(option);
     
-    TreeResult res = ameriput.BinomialTree(4000, BSR, true);
-    res.Print();    // 3.66838    -0.314151    0.0234312    -2.269
+    ameriput.BinomialTree(1280, vanilla, true).Print();
+    ameriput.BinomialTree(1280, average, true).Print();
+    ameriput.BinomialTree(1280, BS, true).Print();
+    ameriput.BinomialTree(1280, BSR, true).Print();
+}
+
+void TestBasicTTree() {
+    EuropeanOption option(0., 41., 39., 1., .25, .03, .005);
+    AmericanPut ameriput(option);
+    
+    ameriput.TrinomialTree(1280, vanilla, true).Print();
+    ameriput.TrinomialTree(1280, BS, true).Print();
+    ameriput.TrinomialTree(1280, BSR, true).Print();
 }
 
 int main(int argc, const char * argv[]) {
     
+    std::cout << std::fixed << std::setprecision(6);
 //    TestBasicBTree();
+    TestBasicTTree();
     
     return 0;
 }
