@@ -9,6 +9,7 @@
 #define TreePricer_hpp
 
 #include <iostream>
+#include <vector>
 
 struct TreeResult {
     double value;
@@ -26,6 +27,23 @@ enum TreeModifier {
     average,    // Average tree
     BS,         // Black-Scholes
     BSR         // Black-Scholes with Richardson extrapolation
+};
+
+struct Dividend {
+    std::vector<double> dates;
+    std::vector<double> dividends;
+    
+    void Print() const {
+        std::cout << "t: ";
+        for (double t : dates) {
+            std::cout << t << ' ';
+        }
+        std::cout << "\nd: ";
+        for (double d : dividends) {
+            std::cout << d << ' ';
+        }
+        std::cout << std::endl;
+    }
 };
 
 

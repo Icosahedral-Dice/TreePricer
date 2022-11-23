@@ -173,13 +173,11 @@ TreeResult BTree::PIVanilla(const std::function<double (double, double)>& payoff
     // Generate asset price at maturity
     std::vector<double> S(this->GenerateSMeshPI(S0_, u_, d_, steps_));
     
-    auto payoff_T = std::bind(payoff, std::placeholders::_1, T_);
-    
     // Generate derivative value at maturity
     std::vector<double> V(this->GeneratePayoff(S, payoff, T_));
     
     // Backtrack until t = 2 * dt (the resulting sub-tree is used for Greek calculation)
-    std::size_t curr_step = steps_;
+    std::size_t curr_step = steps_ - 1;
     while (curr_step >= 2) {
         this->BacktrackPI(V);
         curr_step--;
@@ -189,6 +187,7 @@ TreeResult BTree::PIVanilla(const std::function<double (double, double)>& payoff
     double V20 = V[0];
     double V21 = V[1];
     double V22 = V[2];
+    assert(V.size() == 3);
     
     // Backtrack
     this->BacktrackPI(V);
@@ -229,6 +228,7 @@ TreeResult BTree::EEVanilla(const std::function<double (double, double)>& payoff
     double V20 = V[0];
     double V21 = V[1];
     double V22 = V[2];
+    assert(V.size() == 3);
     
     // Backtrack
     this->BacktrackEE(V, S, curr_step, payoff, curr_time);
@@ -287,6 +287,7 @@ TreeResult BTree::PIBS(const std::function<double (double, double)>& payoff) con
     
     // Generate derivative value at the step just before maturity
     std::vector<double> V(this->GeneratePayoff(S, last_step, 0.));  // The last param is a dummy
+    curr_step--;
     
     // Backtrack until t = 2 * dt (the resulting sub-tree is used for Greek calculation)
     while (curr_step >= 2) {
@@ -298,6 +299,7 @@ TreeResult BTree::PIBS(const std::function<double (double, double)>& payoff) con
     double V20 = V[0];
     double V21 = V[1];
     double V22 = V[2];
+    assert(V.size() == 3);
     
     // Backtrack
     this->BacktrackPI(V);
@@ -357,6 +359,7 @@ TreeResult BTree::EEBS(const std::function<double (double, double)>& payoff) con
     double V20 = V[0];
     double V21 = V[1];
     double V22 = V[2];
+    assert(V.size() == 3);
     
     // Backtrack
     this->BacktrackEE(V, S, curr_step, payoff, curr_time);

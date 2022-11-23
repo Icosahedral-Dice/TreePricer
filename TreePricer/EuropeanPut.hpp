@@ -21,6 +21,7 @@ public:
     
     TreeResult BinomialTree(std::size_t steps, const TreeModifier& modifier) const;
     TreeResult TrinomialTree(std::size_t steps, const TreeModifier& modifier) const;
+    TreeResult BinomialTree(std::size_t steps, const TreeModifier& modifier, const Dividend& proportional, const Dividend& fixed) const;
 };
 
 #endif /* EuropeanPut_hpp */
