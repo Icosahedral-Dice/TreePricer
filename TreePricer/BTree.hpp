@@ -45,8 +45,8 @@ public:
     BTree(const EuropeanOption& option, std::size_t steps);
     ~BTree() = default;
     
-    TreeResult PathIndependentOption(const std::function<double (double, double)>& payoff, const TreeModifier& modifier) const;
-    TreeResult EarlyExerciseOption(const std::function<double (double, double)>& payoff, const TreeModifier& modifier) const;
+    virtual TreeResult PathIndependentOption(const std::function<double (double, double)>& payoff, const TreeModifier& modifier) const;
+    virtual TreeResult EarlyExerciseOption(const std::function<double (double, double)>& payoff, const TreeModifier& modifier) const;
     
 protected:
     std::vector<double> GenerateSMeshPI(double S0, double u, double d, std::size_t steps) const;
@@ -68,10 +68,10 @@ private:
     TreeResult PIBS(const std::function<double (double, double)>& payoff) const;        // Black-Scholes
     TreeResult PIBSR(const std::function<double (double, double)>& payoff) const;       // Black-Scholes with Richardson extrapolation
     
-    TreeResult EEVanilla(const std::function<double (double, double)>& payoff) const;
-    TreeResult EEAvg(const std::function<double (double, double)>& payoff) const;
-    TreeResult EEBS(const std::function<double (double, double)>& payoff) const;        // Black-Scholes
-    TreeResult EEBSR(const std::function<double (double, double)>& payoff) const;       // Black-Scholes with Richardson extrapolation
+    virtual TreeResult EEVanilla(const std::function<double (double, double)>& payoff) const;
+    virtual TreeResult EEAvg(const std::function<double (double, double)>& payoff) const;
+    virtual TreeResult EEBS(const std::function<double (double, double)>& payoff) const;        // Black-Scholes
+    virtual TreeResult EEBSR(const std::function<double (double, double)>& payoff) const;       // Black-Scholes with Richardson extrapolation
     
 //    TreeResult EEVanilla_VarRed(const std::function<double (double, double)>& payoff) const;
 //    TreeResult EEAvg_VarRed(const std::function<double (double, double)>& payoff) const;
