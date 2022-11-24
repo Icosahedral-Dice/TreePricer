@@ -39,3 +39,21 @@ TreeResult EuropeanPut::BinomialTree(std::size_t steps, const TreeModifier& modi
     
     return res;
 }
+
+// Iterative pricer
+std::tuple<TreeResult, std::size_t> EuropeanPut::BinomialTree(std::size_t init_steps, const TreeModifier& modifier, const Dividend& proportional, const Dividend& fixed, double tol) const {
+    std::size_t steps = init_steps;
+    
+    TreeResult res = this->BinomialTree(steps, modifier, proportional, fixed);
+    double v_new = res.value;
+    double v_old = -1. - tol;
+    
+    while (std::abs(v_new - v_old) >= tol) {
+        steps <<= 1;
+        v_old = v_new;
+        res = this->BinomialTree(steps, modifier, proportional, fixed);
+        v_new = res.value;
+    }
+    
+    return std::make_tuple(res, steps);
+}

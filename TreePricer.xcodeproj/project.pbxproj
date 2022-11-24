@@ -47,6 +47,7 @@
 		CA44EEB3292DDC7700597BFF /* EuropeanPut.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = EuropeanPut.hpp; sourceTree = "<group>"; };
 		CA44EEB5292DE7F700597BFF /* BTreeDiscreteDividend.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = BTreeDiscreteDividend.cpp; sourceTree = "<group>"; };
 		CA44EEB6292DE7F700597BFF /* BTreeDiscreteDividend.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = BTreeDiscreteDividend.hpp; sourceTree = "<group>"; };
+		CA44EEB9292F105A00597BFF /* HW11.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HW11.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,6 +81,7 @@
 			isa = PBXGroup;
 			children = (
 				CA44EE80292D5DEB00597BFF /* main.cpp */,
+				CA44EEB9292F105A00597BFF /* HW11.hpp */,
 				CA44EEB5292DE7F700597BFF /* BTreeDiscreteDividend.cpp */,
 				CA44EEB6292DE7F700597BFF /* BTreeDiscreteDividend.hpp */,
 				CA44EEAC292DB2A700597BFF /* TTree.cpp */,

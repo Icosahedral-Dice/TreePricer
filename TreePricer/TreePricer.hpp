@@ -46,5 +46,11 @@ struct Dividend {
     }
 };
 
+//void PrintVector(const std::vector<double>& vec) {
+//    for (double elem : vec) {
+//        std::cout << elem << '\t';
+//    }
+//    std::cout << std::endl;
+//}
 
 #endif /* TreePricer_hpp */

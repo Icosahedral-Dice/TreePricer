@@ -57,11 +57,12 @@ protected:
     
     void EarlyExUpdate(std::vector<double>& V, const std::vector<double>& earlyex_payoff) const;
     
+    TreeResult GenTreeResult(double V00, double V10, double V11, double V20, double V21, double V22) const;
+    
     void BacktrackPI(std::vector<double>& V_mesh) const;
     void BacktrackEE(std::vector<double>& V_mesh, std::array<std::deque<double>, 2>& S_mesh, size_t curr_step, const std::function<double (double, double)>& payoff, double curr_time) const;
     
-    TreeResult GenTreeResult(double V00, double V10, double V11, double V20, double V21, double V22) const;
-    
+private:
     TreeResult PIVanilla(const std::function<double (double, double)>& payoff) const;
     TreeResult PIAvg(const std::function<double (double, double)>& payoff) const;
     TreeResult PIBS(const std::function<double (double, double)>& payoff) const;        // Black-Scholes

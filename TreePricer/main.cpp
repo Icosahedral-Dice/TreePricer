@@ -9,6 +9,8 @@
 #include "EuropeanPut.hpp"
 #include "AmericanPut.hpp"
 #include <iomanip>
+#include <cmath>
+#include "HW11.hpp"
 
 void TestBasicBTree() {
     EuropeanOption option(0., 54., 50., 1., .29, .0375, .01);
@@ -69,13 +71,27 @@ void TestDiscreteDividendEuropeanPut() {
     europut2.BinomialTree(1536, vanilla).Print();
 }
 
+void TestDiscreteDividendAmericanPut() {
+    // 2% after 2 months
+    EuropeanOption option(0., 50., 55.55, .25, .2, .02, 0.);
+    AmericanPut europut(option);
+    Dividend proportional({{2./12.}, {.02}});
+    Dividend fixed;
+    europut.BinomialTree(6, vanilla, proportional, fixed).Print();
+}
+
+
+
 int main(int argc, const char * argv[]) {
     
     std::cout << std::fixed << std::setprecision(6);
 //    TestBasicBTree();
 //    TestBasicTTree();
     
-    TestDiscreteDividendEuropeanPut();
+//    TestDiscreteDividendEuropeanPut();
+//    TestDiscreteDividendAmericanPut();
+    
+    HW11();
     
     return 0;
 }

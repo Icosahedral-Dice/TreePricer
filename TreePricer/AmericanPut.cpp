@@ -8,20 +8,19 @@
 #include "AmericanPut.hpp"
 #include "BTree.hpp"
 #include "TTree.hpp"
+#include "BTreeDiscreteDividend.hpp"
 
 AmericanPut::AmericanPut(double S, double K, double T, double sigma, double r, double q) : option_(0., S, K, T, sigma, r, q) {}
 AmericanPut::AmericanPut(const EuropeanOption& option) : option_(option) {}
 
 TreeResult AmericanPut::BinomialTree(std::size_t steps, const TreeModifier &modifier, bool variance_reduction) const {
     
-    BTree american_tree(option_, steps);
+    BTree tree(option_, steps);
     
-    TreeResult res = american_tree.EarlyExerciseOption(option_.PutPayoff(), modifier);
+    TreeResult res = tree.EarlyExerciseOption(option_.PutPayoff(), modifier);
     
     if (variance_reduction) {
-        BTree european_tree(option_, steps);
-        
-        TreeResult euro_res = european_tree.PathIndependentOption(option_.PutPayoff(), modifier);
+        TreeResult euro_res = tree.PathIndependentOption(option_.PutPayoff(), modifier);
         
         res.value -= (euro_res.value - option_.Put());
         res.delta -= (euro_res.delta - option_.DeltaPut());
@@ -34,14 +33,12 @@ TreeResult AmericanPut::BinomialTree(std::size_t steps, const TreeModifier &modi
 
 TreeResult AmericanPut::TrinomialTree(std::size_t steps, const TreeModifier &modifier, bool variance_reduction) const {
     
-    TTree american_tree(option_, steps);
+    TTree tree(option_, steps);
     
-    TreeResult res = american_tree.EarlyExerciseOption(option_.PutPayoff(), modifier);
+    TreeResult res = tree.EarlyExerciseOption(option_.PutPayoff(), modifier);
     
     if (variance_reduction) {
-        TTree european_tree(option_, steps);
-        
-        TreeResult euro_res = european_tree.PathIndependentOption(option_.PutPayoff(), modifier);
+        TreeResult euro_res = tree.PathIndependentOption(option_.PutPayoff(), modifier);
         
         res.value -= (euro_res.value - option_.Put());
         res.delta -= (euro_res.delta - option_.DeltaPut());
@@ -50,4 +47,42 @@ TreeResult AmericanPut::TrinomialTree(std::size_t steps, const TreeModifier &mod
     }
     
     return res;
+}
+
+TreeResult AmericanPut::BinomialTree(std::size_t steps, const TreeModifier& modifier, const Dividend& proportional, const Dividend& fixed, bool variance_reduction) const {
+    
+    BTreeDiscDiv tree(option_, steps, proportional, fixed);
+    
+    TreeResult res = tree.EarlyExerciseOption(option_.PutPayoff(), modifier);
+    
+    if (variance_reduction) {
+        TreeResult euro_res = tree.PathIndependentOption(option_.PutPayoff(), modifier);
+        EuropeanOption equivalent_option(0., tree.EquivalentS0(), option_.K_, option_.T_, option_.sigma_, option_.r_, option_.q_);
+        
+        res.value -= (euro_res.value - equivalent_option.Put());
+        res.delta -= (euro_res.delta - equivalent_option.DeltaPut());
+        res.gamma -= (euro_res.gamma - equivalent_option.GammaPut());
+        res.theta -= (euro_res.theta - equivalent_option.ThetaPut());
+    }
+    
+    return res;
+    
+}
+
+// Iterative pricer
+std::tuple<TreeResult, std::size_t> AmericanPut::BinomialTree(std::size_t init_steps, const TreeModifier& modifier, const Dividend& proportional, const Dividend& fixed, double tol, bool variance_reduction) const {
+    std::size_t steps = init_steps;
+    
+    TreeResult res = this->BinomialTree(steps, modifier, proportional, fixed, variance_reduction);
+    double v_new = res.value;
+    double v_old = -1. - tol;
+    
+    while (std::abs(v_new - v_old) >= tol) {
+        steps <<= 1;
+        v_old = v_new;
+        res = this->BinomialTree(steps, modifier, proportional, fixed, variance_reduction);
+        v_new = res.value;
+    }
+    
+    return std::make_tuple(res, steps);
 }
