@@ -84,7 +84,15 @@ double BTreeDiscDiv::EquivalentS0() const {
 TreeResult BTreeDiscDiv::PathIndependentOption(const std::function<double (double, double)>& payoff, const TreeModifier& modifier) const {
     // Since the option is path independent, we can simply construct a continuous-dividend binomial tree with adjusted S0 for pricing.
     BTree continuous_dividend_tree(equivalent_S0_, sigma_, T_, steps_, r_, q_);
-    return continuous_dividend_tree.PathIndependentOption(payoff, modifier);
+    
+    // Adjust Greeks
+    TreeResult continuous_res(continuous_dividend_tree.PathIndependentOption(payoff, modifier));
+    
+    continuous_res.delta *= (equivalent_S0_ / S0_);
+    continuous_res.gamma *= (equivalent_S0_ / S0_);
+    continuous_res.theta *= (equivalent_S0_ / S0_);
+    
+    return continuous_res;
 }
 
 TreeResult BTreeDiscDiv::EarlyExerciseOption(const std::function<double (double, double)>& payoff, const TreeModifier& modifier) const {
