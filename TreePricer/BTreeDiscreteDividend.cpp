@@ -89,8 +89,7 @@ TreeResult BTreeDiscDiv::PathIndependentOption(const std::function<double (doubl
     TreeResult continuous_res(continuous_dividend_tree.PathIndependentOption(payoff, modifier));
     
     continuous_res.delta *= (equivalent_S0_ / S0_);
-    continuous_res.gamma *= (equivalent_S0_ / S0_);
-    continuous_res.theta *= (equivalent_S0_ / S0_);
+    continuous_res.gamma *= (equivalent_S0_ / S0_) * (equivalent_S0_ / S0_);
     
     return continuous_res;
 }
