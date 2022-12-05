@@ -21,18 +21,17 @@ BTreeDiscDiv::BTreeDiscDiv(const EuropeanOption& option, std::size_t steps, cons
 double BTreeDiscDiv::FindEquivalentS0(double S0, const Dividend& proportional, const Dividend& fixed, double r) {
     
     double S = S0;
-    
+    // The "sophisticated" algorithm
     auto tit_prop = proportional.dates.cbegin();
     auto dit_prop = proportional.dividends.cbegin();
     auto tit_fixed = fixed.dates.cbegin();
     auto dit_fixed = fixed.dividends.cbegin();
-    
+
     while ((tit_prop != proportional.dates.cend()) || (tit_fixed != fixed.dates.cend())) {
         if (tit_prop == proportional.dates.cend()) {
             // Proportional dividends exhausted, apply all remaining fixed dividends
             while (tit_fixed != fixed.dates.cend()) {
                 S -= (*dit_fixed) * std::exp(-r * (*tit_fixed));
-                
                 dit_fixed++;
                 tit_fixed++;
             }
@@ -41,7 +40,6 @@ double BTreeDiscDiv::FindEquivalentS0(double S0, const Dividend& proportional, c
             // Fixed dividends exhausted, apply all remaining proportional dividends
             while (tit_prop != proportional.dates.cend()) {
                 S *= (1. - *dit_prop);
-                
                 dit_prop++;
                 tit_prop++;
             }
@@ -52,13 +50,11 @@ double BTreeDiscDiv::FindEquivalentS0(double S0, const Dividend& proportional, c
             if ((*tit_fixed) < (*tit_prop)) {
                 // The fixed dividend is earlier
                 S -= (*dit_fixed) * std::exp(-r * (*tit_fixed));
-                
                 dit_fixed++;
                 tit_fixed++;
             } else {
                 // The proportional dividend is earlier
                 S *= (1. - *dit_prop);
-                
                 dit_prop++;
                 tit_prop++;
             }
@@ -86,10 +82,14 @@ TreeResult BTreeDiscDiv::PathIndependentOption(const std::function<double (doubl
     BTree continuous_dividend_tree(equivalent_S0_, sigma_, T_, steps_, r_, q_);
     
     // Adjust Greeks
+    double multiplier = 1.;
+    for (double div : proportional_.dividends) {
+        multiplier *= (1. - div);
+    }
     TreeResult continuous_res(continuous_dividend_tree.PathIndependentOption(payoff, modifier));
     
-    continuous_res.delta *= (equivalent_S0_ / S0_);
-    continuous_res.gamma *= (equivalent_S0_ / S0_) * (equivalent_S0_ / S0_);
+    continuous_res.delta *= multiplier;
+    continuous_res.gamma *= multiplier * multiplier;
     
     return continuous_res;
 }
@@ -146,6 +146,14 @@ std::vector<double> BTreeDiscDiv::GeneratePayoff(const container& S, const std::
     return V;
 }
 
+TreeResult BTreeDiscDiv::GenTreeResult(double V00, double V10, double V11, double V20, double V21, double V22, double S10, double S11, double S20, double S21, double S22) const {
+    double delta = (V10 - V11) / (S10 - S11);
+    double gamma = ((V20 - V21) / (S20 - S21) - (V21 - V22) / (S21 - S22)) / (.5 * (S20 - S22));
+    double theta = (V21 - V00) / (2. * dt_);
+    
+    return TreeResult({V00, delta, gamma, theta});
+}
+
 void BTreeDiscDiv::BacktrackEE(std::vector<double>& V_mesh, std::array<std::deque<double>, 2>& S_mesh, size_t curr_step, const std::function<double (double, double)>& payoff, double curr_time, double cum_fixed) const {
     
     // Backtrack as if path independent
@@ -189,7 +197,7 @@ void BTreeDiscDiv::ApplyDividend(std::array<std::deque<double>, 2>& S, size_t cu
         // Apply dividend
         std::for_each(S[0].begin(), S[0].end(), [=](double& s)->void { s /= (1. - proportional_dividends.back()); });
         std::for_each(S[1].begin(), S[1].end(), [=](double& s)->void { s /= (1. - proportional_dividends.back()); });
-        
+        cum_fixed /= (1. - proportional_dividends.back());
         // Shorten proportional dividend array
         proportional_steps.pop_back();
         proportional_dividends.pop_back();
@@ -223,8 +231,17 @@ TreeResult BTreeDiscDiv::EEVanilla(const std::function<double (double, double)>&
     curr_step--;
     curr_time -= dt_;
     
+    double S20 = 0., S21 = 0., S22 = 0.;
+    std::size_t which_S;
     while (curr_step >= 2) {
         // During backtracking, curr_step and curr_time are exactly the current step (0-indexed) and the current time
+        if (curr_step == 2) {
+            which_S = std::size_t(S[1].size() == 3);
+            assert(S[which_S].size() == 3);
+            S20 = S[which_S][0] + cum_fixed;
+            S21 = S[which_S][1] + cum_fixed;
+            S22 = S[which_S][2] + cum_fixed;
+        }
         this->BacktrackEE(V, S, curr_step, payoff, curr_time, cum_fixed);
         this->ApplyDividend(S, curr_step, cum_fixed, proportional_steps, proportional_dividends, fixed_steps, fixed_dividends);
         curr_step--;
@@ -238,6 +255,10 @@ TreeResult BTreeDiscDiv::EEVanilla(const std::function<double (double, double)>&
     assert(V.size() == 3);
     
     // Backtrack
+    which_S = std::size_t(S[1].size() == 2);
+    assert(S[which_S].size() == 2);
+    double S10 = S[which_S][0] + cum_fixed;
+    double S11 = S[which_S][1] + cum_fixed;
     this->BacktrackEE(V, S, curr_step, payoff, curr_time, cum_fixed);
     this->ApplyDividend(S, curr_step, cum_fixed, proportional_steps, proportional_dividends, fixed_steps, fixed_dividends);
     curr_step--;
@@ -254,5 +275,5 @@ TreeResult BTreeDiscDiv::EEVanilla(const std::function<double (double, double)>&
     curr_time -= dt_;
     double V00 = V[0];
     
-    return this->BTree::GenTreeResult(V00, V10, V11, V20, V21, V22);
+    return this->GenTreeResult(V00, V10, V11, V20, V21, V22, S10, S11, S20, S21, S22);
 }

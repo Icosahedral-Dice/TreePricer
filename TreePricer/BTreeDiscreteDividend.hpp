@@ -37,6 +37,8 @@ private:
     template <typename container>
     std::vector<double> GeneratePayoff(const container& S, const std::function<double (double, double)>& payoff, double t, double cum_fixed) const ;
     
+    TreeResult GenTreeResult(double V00, double V10, double V11, double V20, double V21, double V22, double S10, double S11, double S20, double S21, double S22) const;
+    
     void BacktrackEE(std::vector<double>& V_mesh, std::array<std::deque<double>, 2>& S_mesh, size_t curr_step, const std::function<double (double, double)>& payoff, double curr_time, double cum_fixed) const;
     
     void ApplyDividend(std::array<std::deque<double>, 2>& S, size_t curr_step, double& cum_fixed, std::vector<std::size_t>& proportional_steps, std::vector<double>& proportional_dividends, std::vector<std::size_t>& fixed_steps, std::vector<double>& fixed_dividends) const;
