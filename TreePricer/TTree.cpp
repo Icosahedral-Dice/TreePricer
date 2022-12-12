@@ -106,6 +106,27 @@ std::vector<double> TTree::GeneratePayoff(const std::deque<double>& S, const std
     return V;
 }
 
+std::vector<double> TTree::GeneratePayoff(const std::deque<double> &S, const std::function<double (double, double)> &payoff, double t, const Barrier& barrier, double B) const {
+    
+    assert(barrier == DownAndOut);
+    
+    auto payoff_t = std::bind(payoff, std::placeholders::_1, t);
+    
+    std::vector<double> V(S.size());
+    std::transform(S.cbegin(), S.cend(), V.begin(), payoff_t);
+    
+    std::transform(S.cbegin(), S.cend(), V.cbegin(), V.begin(), [&](double s, double v)->double {
+        if (s <= B) {
+            return 0.;
+        } else {
+            return v;
+        }
+    });
+    
+    return V;
+    
+}
+
 void TTree::EarlyExUpdate(std::vector<double>& V, const std::vector<double>& earlyex_payoff) const {
     assert(V.size() == earlyex_payoff.size());
     
@@ -137,6 +158,29 @@ void TTree::BacktrackEE(std::vector<double>& V, std::deque<double>& S, size_t cu
     std::vector<double> exercise_payoff(this->GeneratePayoff(S, payoff, curr_time));
     
     this->EarlyExUpdate(V, exercise_payoff);
+    
+    if (S.size() >= 2) {
+        // Shrink the current S since we will have fewer outcomes in the next iteration.
+        S.pop_front();
+        S.pop_back();
+    }
+    
+}
+
+void TTree::BacktrackBarrier(std::vector<double>& V, std::deque<double>& S, const Barrier& barrier, double B) const {
+    
+    assert(barrier == DownAndOut);
+    // Backtrack as if European
+    this->BacktrackPI(V);
+    
+    // Set to zero if S is down
+    std::transform(S.cbegin(), S.cend(), V.cbegin(), V.begin(), [&](double s, double v)->double {
+        if (s <= B) {
+            return 0.;
+        } else {
+            return v;
+        }
+    });
     
     if (S.size() >= 2) {
         // Shrink the current S since we will have fewer outcomes in the next iteration.
@@ -387,5 +431,49 @@ TreeResult TTree::EEBSR(const std::function<double (double, double)>& payoff) co
     double theta = res1.theta * 2 - res2.theta;
     
     return TreeResult({value, delta, gamma, theta});
+}
+
+TreeResult TTree::BarrierVanilla(const std::function<double (double, double)>& payoff, const Barrier& barrier, double B) const {
+    
+    // TODO: Only down-and-out
+    assert(barrier == DownAndOut);
+    
+    // Generate asset price at maturity
+    std::deque<double> S(this->GenerateSMesh(S0_, u_, d_, steps_));
+    
+    // Generate derivative value at maturity
+    std::vector<double> V(this->GeneratePayoff(S, payoff, T_, barrier, B));
+    
+    S.pop_front();
+    S.pop_back();
+    
+    // Backtrack until the end
+    while (V.size() > 5) {
+        this->BacktrackBarrier(V, S, barrier, B);
+    }
+    
+    // Store nodes of Step 2
+    double V20 = V[0];
+//    double V21 = V[1];
+    double V22 = V[2];
+//    double V23 = V[3];
+    double V24 = V[4];
+    assert(V.size() == 5);
+
+    // Backtrack
+    this->BacktrackBarrier(V, S, barrier, B);
+
+    // Store nodes of Step 1
+    double V10 = V[0];
+    double V11 = V[1];
+    double V12 = V[2];
+
+    // Backtrack
+    this->BacktrackBarrier(V, S, barrier, B);
+    double V00 = V[0];
+    
+    return this->GenTreeResult(V00, V10, V11, V12, V20, V22, V24);
+
+    
 }
 

@@ -27,6 +27,8 @@ public:
     
     // Iterative pricer
     std::tuple<TreeResult, std::size_t> BinomialTree(std::size_t init_steps, const TreeModifier& modifier, const Dividend& proportional, const Dividend& fixed, double tol) const;
+    
+    TreeResult TrinomialTree(std::size_t steps, const TreeModifier& modifier, const Barrier& barrier, double B) const;
 };
 
 #endif /* EuropeanPut_hpp */

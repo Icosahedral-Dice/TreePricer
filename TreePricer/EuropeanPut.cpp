@@ -57,3 +57,13 @@ std::tuple<TreeResult, std::size_t> EuropeanPut::BinomialTree(std::size_t init_s
     
     return std::make_tuple(res, steps);
 }
+
+TreeResult EuropeanPut::TrinomialTree(std::size_t steps, const TreeModifier& modifier, const Barrier& barrier, double B) const {
+    
+    // !!!: This is a DaO CALL!!!
+    
+    TTree european_tree(option_, steps);
+    TreeResult res =  european_tree.BarrierVanilla(option_.CallPayoff(), DownAndOut, B);
+    
+    return res;
+}

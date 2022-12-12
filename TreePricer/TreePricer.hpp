@@ -53,4 +53,11 @@ struct Dividend {
 //    std::cout << std::endl;
 //}
 
+enum Barrier {
+    UpAndIn,
+    UpAndOut,
+    DownAndIn,
+    DownAndOut,
+};
+
 #endif /* TreePricer_hpp */

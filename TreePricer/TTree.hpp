@@ -52,11 +52,13 @@ protected:
     std::deque<double> GenerateSMesh(double S0, double u, double d, std::size_t steps) const;
     
     std::vector<double> GeneratePayoff(const std::deque<double>& S, const std::function<double (double, double)>& payoff, double t) const;
+    std::vector<double> GeneratePayoff(const std::deque<double> &S, const std::function<double (double, double)> &payoff, double t, const Barrier& barrier, double B) const;
     
     void EarlyExUpdate(std::vector<double>& V, const std::vector<double>& earlyex_payoff) const;
     
     void BacktrackPI(std::vector<double>& V_mesh) const;
     void BacktrackEE(std::vector<double>& V_mesh, std::deque<double>& S_mesh, size_t curr_step, const std::function<double (double, double)>& payoff, double curr_time) const;
+    void BacktrackBarrier(std::vector<double>& V, std::deque<double>& S, const Barrier& barrier, double B) const;
     
     TreeResult GenTreeResult(double V00, double V10, double V11, double V12, double V20, double V22, double V24) const;
     
@@ -69,6 +71,9 @@ protected:
 //    TreeResult EEAvg(const std::function<double (double, double)>& payoff) const;
     TreeResult EEBS(const std::function<double (double, double)>& payoff) const;        // Black-Scholes
     TreeResult EEBSR(const std::function<double (double, double)>& payoff) const;       // Black-Scholes with Richardson extrapolation
+    
+public:
+    TreeResult BarrierVanilla(const std::function<double (double, double)>& payoff, const Barrier& barrier, double B) const;
 
 };
 
