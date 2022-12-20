@@ -95,7 +95,7 @@ int FindOptimalN(const EuropeanOption& option, int k, double B) {
 }
 
 void HW12() {
-    EuropeanOption option(0., 42., 40., 7. / 12., .25, .03, .015);
+    EuropeanOption option(0., 50., 48., 10. / 12., .30, .02, .01);
     EuropeanPut put(option);
     
     double B = 35.;
@@ -103,15 +103,31 @@ void HW12() {
     double theoretical_val = DaO(option, B);
     std::cout << "Theoretical value: " << theoretical_val << std::endl;
     
-//    for (std::size_t N = 10; N <= 1000; N++) {
-//        double val = put.TrinomialTree(N, vanilla, DownAndOut, B).value;
-//        std::cout << N << '\t' << std::abs(val - theoretical_val) << std::endl;
-//    }
+    for (std::size_t N = 10; N <= 1000; N++) {
+        double val = put.TrinomialTree(N, vanilla, DownAndOut, B).value;
+        std::cout << N << '\t' << std::abs(val - theoretical_val) << std::endl;
+    }
     
     for (int k = 2; k < 12; k++) {
         std::size_t optimal_N = FindOptimalN(option, k, B);
         double val = put.TrinomialTree(optimal_N, vanilla, DownAndOut, B).value;
         std::cout << optimal_N << '\t' << std::abs(val - theoretical_val) << std::endl;
+    }
+}
+
+void Final() {
+    EuropeanOption option(0., 50., 48., 10. / 12., .30, .02, .01);
+    EuropeanPut put(option);
+    
+    double B = 45.;
+    
+    double theoretical_val = DaO(option, B);
+    std::cout << "Theoretical value: " << theoretical_val << std::endl;
+    
+    for (std::size_t N = 10; N <= 1000; N++) {
+        double val = put.BinomialTree(N, vanilla, DownAndOut, B).value;
+        double val2 = put.TrinomialTree(N, vanilla, DownAndOut, B).value;
+        std::cout << val << '\t' << std::abs(val - theoretical_val) << '\t' << val2 << '\t' << std::abs(val2 - theoretical_val) << std::endl;
     }
 }
 
@@ -125,7 +141,8 @@ int main(int argc, const char * argv[]) {
 //    TestDiscreteDividendAmericanPut();
     
 //    HW11();
-    HW12();
+//    HW12();
+    Final();
     
     return 0;
 }

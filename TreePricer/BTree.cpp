@@ -115,6 +115,27 @@ std::vector<double> BTree::GeneratePayoff(const container& S, const std::functio
     return V;
 }
 
+std::vector<double> BTree::GeneratePayoffBarrier(const std::deque<double>& S, const std::function<double (double, double)>& payoff, double t, const Barrier& barrier, double B) const {
+    // MARK: Barrier payoff
+    
+    assert(barrier == DownAndOut);
+    
+    auto payoff_t = std::bind(payoff, std::placeholders::_1, t);
+    
+    std::vector<double> V(S.size());
+    std::transform(S.cbegin(), S.cend(), V.begin(), payoff_t);
+    
+    std::transform(S.cbegin(), S.cend(), V.cbegin(), V.begin(), [&](double s, double v)->double {
+        if (s <= B) {
+            return 0.;
+        } else {
+            return v;
+        }
+    });
+    
+    return V;
+}
+
 void BTree::EarlyExUpdate(std::vector<double>& V, const std::vector<double>& earlyex_payoff) const {
     assert(V.size() == earlyex_payoff.size());
     
@@ -156,6 +177,33 @@ void BTree::BacktrackEE(std::vector<double>& V_mesh, std::array<std::deque<doubl
     if (S_mesh[which_S].size() >= 2) {
         S_mesh[which_S].pop_back();
         S_mesh[which_S].pop_front();
+    }
+}
+
+void BTree::BacktrackBarrier(std::vector<double>& V, std::array<std::deque<double>, 2>& S, size_t curr_step, const Barrier& barrier, double B) const {
+    
+    assert(barrier == DownAndOut);
+    // Backtrack as if path independent
+    this->BacktrackPI(V);
+    
+    // We maintain two vectors of S and we use them alternatingly.
+    // The current S[i] always has (curr_step + 1) elements.
+    // The other has (curr_step) elements.
+    size_t which_S = (S[1].size() == (curr_step + 1));
+    
+    // Set to zero if S is down
+    std::transform(S[which_S].cbegin(), S[which_S].cend(), V.cbegin(), V.begin(), [&](double s, double v)->double {
+        if (s <= B) {
+            return 0.;
+        } else {
+            return v;
+        }
+    });
+    
+    // Also shrink the current S since we will have less steps in the next two iterations.
+    if (S[which_S].size() >= 2) {
+        S[which_S].pop_back();
+        S[which_S].pop_front();
     }
 }
 
@@ -407,6 +455,54 @@ TreeResult BTree::EEBSR(const std::function<double (double, double)>& payoff) co
     double theta = res1.theta * 2 - res2.theta;
     
     return TreeResult({value, delta, gamma, theta});
+}
+
+TreeResult BTree::BarrierVanilla(const std::function<double (double, double)>& payoff, const Barrier& barrier, double B) const {
+    // TODO: Only down-and-out
+    assert(barrier == DownAndOut);
+    
+    // Generate asset prices
+    // S[0]: Asset price at maturity
+    // S[1]: Asset price dt before maturity
+    std::array<std::deque<double>, 2> S(this->GenerateSMeshEE(S0_, u_, d_, steps_));
+    
+    double curr_time = T_;
+    std::size_t curr_step = steps_;
+    std::vector<double> V(this->GeneratePayoffBarrier(S[0], payoff, curr_time, barrier, B));
+    S[0].pop_back();
+    S[0].pop_front();
+    curr_step--;
+    curr_time -= dt_;
+    
+    while (curr_step >= 2) {
+        // During backtracking, curr_step and curr_time are exactly the current step (0-indexed) and the current time
+        this->BacktrackBarrier(V, S, curr_step, barrier, B);
+        curr_step--;
+        curr_time -= dt_;
+    }
+    
+    // Store nodes of Step 2
+    double V20 = V[0];
+    double V21 = V[1];
+    double V22 = V[2];
+    assert(V.size() == 3);
+    
+    // Backtrack
+    this->BacktrackBarrier(V, S, curr_step, barrier, B);
+    curr_step--;
+    curr_time -= dt_;
+    
+    // Store nodes of Step 1
+    double V10 = V[0];
+    double V11 = V[1];
+    
+    // Backtrack
+    this->BacktrackBarrier(V, S, curr_step, barrier, B);
+    curr_step--;
+    curr_time -= dt_;
+    double V00 = V[0];
+    
+    return this->GenTreeResult(V00, V10, V11, V20, V21, V22);
 }
 
 #endif /* BTree_cpp */

@@ -67,3 +67,10 @@ TreeResult EuropeanPut::TrinomialTree(std::size_t steps, const TreeModifier& mod
     
     return res;
 }
+
+TreeResult EuropeanPut::BinomialTree(std::size_t steps, const TreeModifier& modifier, const Barrier& barrier, double B) const {
+    BTree european_tree(option_, steps);
+    TreeResult res = european_tree.BarrierVanilla(option_.CallPayoff(), DownAndOut, B);
+    
+    return res;
+}
